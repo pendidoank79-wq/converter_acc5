@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accurate NMEXML Converter - Fixed Multi-Tab Layout</title>
+    <!-- SheetJS CDN untuk membaca dan membuat file Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background-color: #f4f7f6;
+            overflow: hidden;
+        }
+
+        /* Side Menu Bar */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 999;
+        }
+
+        .sidebar h2 {
+            padding: 20px 20px 10px 20px;
+            text-align: center;
+            background-color: #1a252f;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        /* Global BranchCode Section */
+        .global-settings {
+            background-color: #1a252f;
+            padding: 0 20px 15px 20px;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .global-settings label {
+            display: block;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .global-settings input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #34495e;
+            border-radius: 4px;
+            background-color: #2c3e50;
+            color: #ffffff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .global-settings input:focus {
+            border-color: #1abc9c;
+        }
+
+        .menu-container {
+            padding: 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: visible;
+        }
+
+        .menu-item {
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item:hover {
+            background-color: #34495e;
+        }
+
+        /* Menu Group Pop-up Samping */
+        .menu-group {
+            position: relative;
+        }
+
+        .submenu-popup {
+            position: absolute;
+            top: 0;
+            left: 100%;
+            width: 240px;
+            background-color: #243342;
+            box-shadow: 4px 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 0 6px 6px 0;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .menu-group:hover .submenu-popup {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .submenu-item {
+            padding: 12px 18px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            color: #bdc3c7;
+            transition: color 0.2s, background 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .submenu-item:last-child {
+            border-bottom: none;
+        }
+
+        .submenu-item:hover {
+            color: #ffffff;
+            background-color: #34495e;
+        }
+
+        .submenu-item.selected {
+            color: #1abc9c;
+            font-weight: bold;
+        }
+
+        /* Area Konten Utama Flexbox */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Tab Bar Permanen di Atas */
+        .tab-bar {
+            display: flex;
+            background-color: #e2e8f0;
+            padding: 10px 10px 0 10px;
+            gap: 5px;
+            overflow-x: auto;
+            border-bottom: 2px solid #cbd5e1;
+            height: 48px;
+            min-height: 48px;
+            align-items: flex-end;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .tab-item {
+            background-color: #cbd5e1;
+            color: #475569;
+            padding: 8px 16px;
+            border-radius: 6px 6px 0 0;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s, color 0.2s;
+            user-select: none;
+            border-top: 3px solid transparent;
+            white-space: nowrap;
+            height: 38px;
+        }
+
+        .tab-item:hover {
+            background-color: #94a3b8;
+            color: #fff;
+        }
+
+        .tab-item.active {
+            background-color: #ffffff;
+            color: #1e293b;
+            font-weight: 600;
+            border-top-color: #1abc9c;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.03);
+        }
+
+        .tab-close {
+            font-size: 1rem;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tab-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: #ef4444;
+        }
+
+        /* Container Konten dengan Scroll Mandiri */
+        .tab-content-container {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            position: relative;
+            background-color: #f8fafc;
+            height: calc(100vh - 48px);
+        }
+
+        /* Modul Converter Card */
+        .module-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: none;
+            animation: fadeIn 0.2s ease-in-out;
+            max-width: 950px;
+            margin-bottom: 30px;
+        }
+
+        .module-card.active {
+            display: block;
+        }
+
+        .module-card h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.3rem;
+        }
+
+        .module-card p.desc {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.88rem;
+        }
+
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .row .form-group {
+            flex: 1;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+        .btn-download {
+            background-color: #28a745;
+        }
+        .btn-download:hover { background-color: #218838; }
+
+        .btn-template {
+            background-color: #ff9800;
+            margin-left: 10px;
+        }
+        .btn-template:hover { background-color: #e68a00; }
+
+        textarea {
+            width: 100%;
+            height: 320px;
+            font-family: Consolas, 'Courier New', Courier, monospace;
+            padding: 12px;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            resize: vertical;
+            background-color: #fafafa;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .info-box {
+            background: #eef6ff;
+            border-left: 4px solid #007bff;
+            padding: 10px 14px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+            font-size: 12.5px;
+            line-height: 1.4;
+            color: #1e293b;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            color: #64748b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(3px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Side Menu Bar -->
+    <nav class="sidebar">
+        <h2>ACCURATE CONVERTER</h2>
+        
+        <!-- Input Global BranchCode -->
+        <div class="global-settings">
+            <label for="globalBranchCode">Pengaturan BranchCode:</label>
+            <input type="text" id="globalBranchCode" value="2040822216" placeholder="Masukkan BranchCode">
+        </div>
+
+        <div class="menu-container">
+            
+            <!-- Modul Penjualan -->
+            <div class="menu-group">
+                <div class="menu-item">
+                    <span>🛒 Modul Penjualan</span>
+                    <span>▶</span>
+                </div>
+                <div class="submenu-popup">
+                    <div class="submenu-item" id="btn-SALESORDER" onclick="openTab('SALESORDER', 'Pesanan Penjualan')">Pesanan Penjualan (SO)</div>
+                    <div class="submenu-item" id="btn-DELIVERYORDER" onclick="openTab('DELIVERYORDER', 'Pengiriman Pesanan')">Pengiriman Pesanan (DO)</div>
+                    <div class="submenu-item" id="btn-SALESINVOICE" onclick="openTab('SALESINVOICE', 'Faktur Penjualan')">Faktur Penjualan (SI)</div>
+                    <div class="submenu-item" id="btn-CUSTOMERRECEIPT" onclick="openTab('CUSTOMERRECEIPT', 'Penerimaan Pelanggan')">Penerimaan Pelanggan (CR)</div>
+                    <div class="submenu-item" id="btn-SALESRETURN" onclick="openTab('SALESRETURN', 'Retur Penjualan')">Retur Penjualan (SR)</div>
+                </div>
+            </div>
+
+            <!-- Modul Pembelian -->
+            <div class="menu-group">
+                <div class="menu-item">
+                    <span>🛍️ Modul Pembelian</span>
+                    <span>▶</span>
+                </div>
+                <div class="submenu-popup">
+                    <div class="submenu-item" id="btn-REQUISITION" onclick="openTab('REQUISITION', 'Permintaan Pembelian')">Permintaan Pembelian (VR)</div>
+                    <div class="submenu-item" id="btn-PO" onclick="openTab('PO', 'Pesanan Pembelian')">Pesanan Pembelian (PO)</div>
+                    <div class="submenu-item" id="btn-RECIEVEITEM" onclick="openTab('RECIEVEITEM', 'Penerimaan Barang')">Penerimaan Barang (RI)</div>
+                    <div class="submenu-item" id="btn-PURCHASEINVOICE" onclick="openTab('PURCHASEINVOICE', 'Faktur Pembelian')">Faktur Pembelian (PI)</div>
+                    <div class="submenu-item" id="btn-VENDORPAYMENT" onclick="openTab('VENDORPAYMENT', 'Pembayaran Pemasok')">Pembayaran Pemasok (VP)</div>
+                    <div class="submenu-item" id="btn-PURCHASERETURN" onclick="openTab('PURCHASERETURN', 'Retur Pembelian')">Retur Pembelian (PR)</div>
+                </div>
+            </div>
+
+            <!-- Modul Kas, Bank & G/L -->
+            <div class="menu-group">
+                <div class="menu-item">
+                    <span>📖 Kas, Bank & G/L</span>
+                    <span>▶</span>
+                </div>
+                <div class="submenu-popup">
+                    <div class="submenu-item" id="btn-OTHERDEPOSIT" onclick="openTab('OTHERDEPOSIT', 'Penerimaan Lain')">Penerimaan Lain (OD)</div>
+                    <div class="submenu-item" id="btn-OTHERPAYMENT" onclick="openTab('OTHERPAYMENT', 'Pembayaran Lain')">Pembayaran Lain (OP)</div>
+                    <div class="submenu-item" id="btn-JV" onclick="openTab('JV', 'Jurnal Umum')">Jurnal Umum (JV)</div>
+                </div>
+            </div>
+
+            <!-- Modul Persediaan (Inventory) -->
+            <div class="menu-group">
+                <div class="menu-item">
+                    <span>📦 Persediaan (Inventory)</span>
+                    <span>▶</span>
+                </div>
+                <div class="submenu-popup">
+                    <div class="submenu-item" id="btn-ITEMTRANSFER" onclick="openTab('ITEMTRANSFER', 'Pindah Barang')">Pindah Barang (Item Transfer)</div>
+                    <div class="submenu-item" id="btn-ITEMADJUSTMENT" onclick="openTab('ITEMADJUSTMENT', 'Penyesuaian Persediaan')">Penyesuaian Persediaan (IA)</div>
+                    <div class="submenu-item" id="btn-ITEMGROUPING" onclick="openTab('ITEMGROUPING', 'Barang Grup')">Barang Grup (Item Grouping)</div>
+                </div>
+            </div>
+
+            <!-- Modul Pembiayaan Pesanan (Job Costing) -->
+            <div class="menu-group">
+                <div class="menu-item">
+                    <span>🏗️ Pembiayaan Pesanan</span>
+                    <span>▶</span>
+                </div>
+                <div class="submenu-popup">
+                    <div class="submenu-item" id="btn-JOBCOSTING" onclick="openTab('JOBCOSTING', 'Pembiayaan Pesanan')">Pembiayaan Pesanan (Job Costing)</div>
+                    <div class="submenu-item" id="btn-FINISHING" onclick="openTab('FINISHING', 'Penyelesaian Pesanan')">Penyelesaian Pesanan (Finishing)</div>
+                </div>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- Area Konten Utama & Multi-Tab -->
+    <main class="main-content">
+        <div class="tab-bar" id="tabBar"></div>
+
+        <div class="tab-content-container" id="tabContentContainer">
+            <div class="empty-state" id="emptyState">
+                <h3>Belum Ada Modul Yang Dibuka</h3>
+                <p>Silakan arahkan kursor ke menu di sebelah kiri dan pilih modul transaksi yang ingin dikonversi.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Contoh Data Template untuk Setiap Modul
+        const excelTemplates = {
+            SALESORDER: [
+                { TRANSACTIONID: "SO-001", KeyID: "1", SONO: "SO-2026-001", SODATE: "2026-09-01", CUSTOMERID: "CUST-01", ITEMNO: "BRG-01", QUANTITY: 10, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A", UNITPRICE: 150000, DISCPC: 0, TAXCODES: "T", TAX1ID: "T", TAX1CODE: "T", TAX1RATE: 11, TAX1AMOUNT: 165000, TERMSID: "C.O.D", ESTSHIPDATE: "2026-09-02", CURRENCYNAME: "IDR", DESCRIPTION: "Pesanan Penjualan Utama" },
+                { TRANSACTIONID: "SO-001", KeyID: "2", SONO: "SO-2026-001", SODATE: "2026-09-01", CUSTOMERID: "CUST-01", ITEMNO: "BRG-02", QUANTITY: 5, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang B", UNITPRICE: 200000, DISCPC: 0, TAXCODES: "T", TAX1ID: "T", TAX1CODE: "T", TAX1RATE: 11, TAX1AMOUNT: 165000, TERMSID: "C.O.D", ESTSHIPDATE: "2026-09-02", CURRENCYNAME: "IDR", DESCRIPTION: "Pesanan Penjualan Utama" }
+            ],
+            DELIVERYORDER: [
+                { TRANSACTIONID: "DO-001", KeyID: "1", INVOICENO: "DO-2026-001", INVOICEDATE: "2026-09-02", CUSTOMERID: "CUST-01", HEADER_WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: 10, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A", BRUTOUNITPRICE: 150000, LINE_WAREHOUSEID: "UTAMA", SOID: "SO-2026-001" }
+            ],
+            SALESINVOICE: [
+                { TRANSACTIONID: "SI-001", KeyID: "1", INVOICENO: "SI-2026-001", INVOICEDATE: "2026-09-03", CUSTOMERID: "CUST-01", ARACCOUNT: "1103-001", INVOICEAMOUNT: 2775000, TERMSID: "C.O.D", HEADER_WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: 10, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A", BRUTOUNITPRICE: 150000, LINE_WAREHOUSEID: "UTAMA" }
+            ],
+            CUSTOMERRECEIPT: [
+                { TRANSACTIONID: "CR-001", KeyID: "1", SEQUENCENO: "CR-2026-001", PAYMENTDATE: "2026-09-05", BANKACCOUNT: "1101-001", BILLTOID: "CUST-01", CHEQUEAMOUNT: 2775000, CURRENCYNAME: "IDR", ARINVOICEID: "SI-2026-001", PAYMENTAMOUNT: 2775000 }
+            ],
+            SALESRETURN: [
+                { TRANSACTIONID: "SR-001", KeyID: "1", INVOICENO: "SR-2026-001", INVOICEDATE: "2026-09-06", GLYEAR: 2026, GLPERIOD: 9, CUSTOMERID: "CUST-01", SALESINVOICEID: "SI-2026-001", INVID: "SI-2026-001", ITEMNO: "BRG-01", QUANTITY: 2, ITEMUNIT: "Pcs", ITEMOVDESC: "Retur Rusak", BRUTTOUNITPRICE: 150000, INVOICEAMOUNT: 333000, HEADER_WAREHOUSEID: "UTAMA", LINE_WAREHOUSEID: "UTAMA" }
+            ],
+            REQUISITION: [
+                { TRANSACTIONID: "VR-001", KeyID: "1", REQNO: "VR-2026-001", REQDATE: "2026-09-01", DESCRIPTION: "Permintaan Bahan Baku", ITEMNO: "BRG-01", QUANTITY: 50, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A" }
+            ],
+            PO: [
+                { TRANSACTIONID: "PO-001", KeyID: "1", PONO: "PO-2026-001", PODATE: "2026-09-02", VENDORREF: "VND-01", TAX1REF: "T", TAX1CODE: "T", TAX1RATE: 11, POAMOUNT: 5550000, TERMREF: "Net 30", REQUISITION: "VR-2026-001", ITEMNO: "BRG-01", QUANTITY: 50, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A", UNITPRICE: 100000 }
+            ],
+            RECIEVEITEM: [
+                { TRANSACTIONID: "RI-001", KeyID: "1", INVOICENO: "RI-2026-001", INVOICEDATE: "2026-09-04", VENDORID: "VND-01", PURCHASEORDERNO: "PO-2026-001", HEADER_WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: 50, ITEMUNIT: "Pcs", ITEMOVDESC: "Barang A", BRUTOUNITPRICE: 100000, LINE_WAREHOUSEID: "UTAMA", POID: "PO-2026-001" }
+            ],
+            PURCHASEINVOICE: [
+                { TRANSACTIONID: "PI-001", KeyID: "1", INVOICENO: "PI-2026-001", INVOICEDATE: "2026-09-05", VENDORID: "VND-01", APACCOUNT: "2101-001", INVOICEAMOUNT: 5550000, TERMSID: "Net 30", HEADER_WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: 50, ITEMOVDESC: "Barang A", BRUTOUNITPRICE: 100000, LINE_WAREHOUSEID: "UTAMA" }
+            ],
+            VENDORPAYMENT: [
+                { TRANSACTIONID: "VP-001", KeyID: "1", SEQUENCENO: "VP-2026-001", PAYMENTDATE: "2026-09-10", BANKACCNT: "1101-001", VENDORID: "VND-01", PAYEE: "PT Supplier Utama", APINVOICEID: "PI-2026-001", PAYMENTAMOUNT: 5550000 }
+            ],
+            PURCHASERETURN: [
+                { TRANSACTIONID: "PR-001", KeyID: "1", INVOICENO: "PR-2026-001", INVOICEDATE: "2026-09-11", GLYEAR: 2026, GLPERIOD: 9, VENDORID: "VND-01", APINVOICEID: "PI-2026-001", INVOICEAMOUNT: 555000, HEADER_WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: 5, ITEMUNIT: "Pcs", BRUTOUNITPRICE: 100000, LINE_WAREHOUSEID: "UTAMA", INVID: "PI-2026-001" }
+            ],
+            OTHERDEPOSIT: [
+                { TRANSACTIONID: "OD-001", KeyID: "1", JVNUMBER: "OD-2026-001", TRANSDATE: "2026-09-01", SOURCE: "GL", TRANSDESCRIPTION: "Penerimaan Bunga Bank", JVAMOUNT: 250000, HEADER_GLACCOUNT: "1101-001", GLACCOUNT: "8101-001", GLAMOUNT: 250000, DESCRIPTION: "Pendapatan Bunga", RATE: 1, PRIMEAMOUNT: 250000 }
+            ],
+            OTHERPAYMENT: [
+                { TRANSACTIONID: "OP-001", KeyID: "1", JVNUMBER: "OP-2026-001", TRANSDATE: "2026-09-02", SOURCE: "GL", TRANSDESCRIPTION: "Pembayaran Biaya Listrik", JVAMOUNT: 1500000, HEADER_GLACCOUNT: "1101-001", GLACCOUNT: "6101-005", GLAMOUNT: 1500000, DEPTID: "01", DESCRIPTION: "Listrik Kantor Sept", RATE: 1, PRIMEAMOUNT: 1500000 }
+            ],
+            JV: [
+                { TRANSACTIONID: "JV-001", KeyID: "1", JVNUMBER: "JV-2026-001", TRANSDATE: "2026-09-05", SOURCE: "GL", TRANSTYPE: "Journal Voucher", TRANSDESCRIPTION: "Penyesuaian Beban", JVAMOUNT: 500000, GLACCOUNT: "6101-010", GLAMOUNT: 500000, LINE_DESCRIPTION: "Beban Perlengkapan (Debet)", RATE: 1, PRIMEAMOUNT: 500000, CURRENCYNAME: "IDR" },
+                { TRANSACTIONID: "JV-001", KeyID: "2", JVNUMBER: "JV-2026-001", TRANSDATE: "2026-09-05", SOURCE: "GL", TRANSTYPE: "Journal Voucher", TRANSDESCRIPTION: "Penyesuaian Beban", JVAMOUNT: 500000, GLACCOUNT: "1105-001", GLAMOUNT: -500000, LINE_DESCRIPTION: "Perlengkapan Kantor (Kredit)", RATE: 1, PRIMEAMOUNT: -500000, CURRENCYNAME: "IDR" }
+            ],
+            ITEMTRANSFER: [
+                { TRANSACTIONID: "IT-001", KeyID: "1", TRANSFERNO: "IT-2026-001", TRANSFERDATE: "2026-09-05", DESCRIPTION: "Pindah Stok ke Cabang", FROMWHID: "UTAMA", TOWHID: "CABANG", ITEMNO: "BRG-01", QUANTITY: 20, ITEMUNIT: "Pcs", UNITPRICE: 100000, SERIALNUMBER: "", EXPIREDDATE: "" }
+            ],
+            ITEMADJUSTMENT: [
+                { TRANSACTIONID: "IA-001", KeyID: "1", ADJUSTMENTNO: "IA-2026-001", ADJUSTMENTDATE: "2026-09-06", ADJUSTMENTACCOUNT: "6101-099", DESCRIPTION: "Stok Opnam Bulanan", WAREHOUSEID: "UTAMA", ITEMNO: "BRG-01", QUANTITY: -2, ITEMUNIT: "Pcs", NEWQTY: 48, UNITPRICE: 100000, SERIALNUMBER: "", EXPIREDDATE: "" }
+            ],
+            ITEMGROUPING: [
+                { TRANSACTIONID: "GRP-001", ITEMNO: "PAKET-HEBAT", ITEMNAME: "Paket Sembako Murah", UNIT1: "Paket", UNITPRICE: 350000, PRINTGROUP: 1, ITEMLINE_NO: "BRG-01", ITEMLINE_QTY: 2, ITEMLINE_UNIT: "Pcs" },
+                { TRANSACTIONID: "GRP-001", ITEMNO: "PAKET-HEBAT", ITEMNAME: "Paket Sembako Murah", UNIT1: "Paket", UNITPRICE: 350000, PRINTGROUP: 1, ITEMLINE_NO: "BRG-02", ITEMLINE_QTY: 1, ITEMLINE_UNIT: "Pcs" }
+            ],
+            JOBCOSTING: [
+                { TRANSACTIONID: "JC-001", KeyID: "1", BATCHNUMBER: "JC-2026-001", TRANSDATE: "2026-09-01", TARGETACCOUNT: "1106-001", DESCRIPTION: "Pembuatan Mesin Rakitan", WAREHOUSEID: "UTAMA", TYPE: "ITEM", ITEMNO: "BRG-01", QUANTITY: 5, ITEMUNIT: "Pcs", ITEMOVDESC: "Bahan Komponen", UNITPRICE: 100000, GLACCOUNT: "", GLAMOUNT: 0, DEPTID: "01", LINE_WAREHOUSEID: "UTAMA" },
+                { TRANSACTIONID: "JC-001", KeyID: "2", BATCHNUMBER: "JC-2026-001", TRANSDATE: "2026-09-01", TARGETACCOUNT: "1106-001", DESCRIPTION: "Pembuatan Mesin Rakitan", WAREHOUSEID: "UTAMA", TYPE: "ACCOUNT", ITEMNO: "", QUANTITY: 0, ITEMUNIT: "", ITEMOVDESC: "", UNITPRICE: 0, GLACCOUNT: "6101-020", GLAMOUNT: 250000, DEPTID: "01", LINE_WAREHOUSEID: "" }
+            ],
+            FINISHING: [
+                { TRANSACTIONID: "FN-001", KeyID: "1", FINISHINGNO: "FN-2026-001", FINISHINGDATE: "2026-09-05", BATCHNUMBER: "JC-2026-001", JOBCSTID: "JC-001", WAREHOUSEID: "UTAMA", DESCRIPTION: "Hasil Rakitan Mesin", ITEMNO: "BRG-JADI-01", QUANTITY: 1, ITEMUNIT: "Unit", UNITPRICE: 750000, PORTION: 100, LINE_WAREHOUSEID: "UTAMA" }
+            ]
+        };
+
+        const modulesData = {
+            SALESORDER: { title: "Pesanan Penjualan (Sales Order)", eximId: "14", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, UNITPRICE, SONO, SODATE, CUSTOMERID, TAX1ID, TAX1CODE, TAX1RATE, TAX1AMOUNT, TERMSID, ESTSHIPDATE, CURRENCYNAME" },
+            DELIVERYORDER: { title: "Pengiriman Pesanan (Delivery Order)", eximId: "15", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, BRUTOUNITPRICE, INVOICENO, INVOICEDATE, CUSTOMERID, HEADER_WAREHOUSEID, LINE_WAREHOUSEID, SOID" },
+            SALESINVOICE: { title: "Faktur Penjualan (Sales Invoice)", eximId: "12", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, BRUTOUNITPRICE, INVOICENO, INVOICEDATE, CUSTOMERID, ARACCOUNT, INVOICEAMOUNT, TERMSID, HEADER_WAREHOUSEID" },
+            CUSTOMERRECEIPT: { title: "Penerimaan Pelanggan (Customer Receipt)", eximId: "12", info: "TRANSACTIONID, KeyID, ARINVOICEID, PAYMENTAMOUNT, SEQUENCENO, PAYMENTDATE, BANKACCOUNT, BILLTOID, CHEQUEAMOUNT, CURRENCYNAME" },
+            SALESRETURN: { title: "Retur Penjualan (Sales Return)", eximId: "13", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, BRUTTOUNITPRICE, INVOICENO, INVOICEDATE, GLYEAR, GLPERIOD, CUSTOMERID, SALESINVOICEID, INVID" },
+            REQUISITION: { title: "Permintaan Pembelian (Requisition)", eximId: "16", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, REQNO, REQDATE, DESCRIPTION" },
+            PO: { title: "Pesanan Pembelian (Purchase Order)", eximId: "17", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, UNITPRICE, PONO, PODATE, VENDORREF, TAX1REF, TAX1CODE, TAX1RATE, POAMOUNT, TERMREF, REQUISITION" },
+            RECIEVEITEM: { title: "Penerimaan Barang (Receive Item)", eximId: "18", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, ITEMOVDESC, BRUTOUNITPRICE, INVOICENO, INVOICEDATE, VENDORID, PURCHASEORDERNO, HEADER_WAREHOUSEID, LINE_WAREHOUSEID, POID" },
+            PURCHASEINVOICE: { title: "Faktur Pembelian (Purchase Invoice)", eximId: "4", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMOVDESC, BRUTOUNITPRICE, INVOICENO, INVOICEDATE, VENDORID, APACCOUNT, INVOICEAMOUNT, TERMSID, HEADER_WAREHOUSEID" },
+            VENDORPAYMENT: { title: "Pembayaran Pemasok (Vendor Payment)", eximId: "19", info: "TRANSACTIONID, KeyID, APINVOICEID, PAYMENTAMOUNT, SEQUENCENO, PAYMENTDATE, BANKACCNT, VENDORID, PAYEE" },
+            PURCHASERETURN: { title: "Retur Pembelian (Purchase Return)", eximId: "20", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, BRUTOUNITPRICE, INVOICENO, INVOICEDATE, GLYEAR, GLPERIOD, VENDORID, APINVOICEID, INVOICEAMOUNT, HEADER_WAREHOUSEID, LINE_WAREHOUSEID, INVID" },
+            OTHERDEPOSIT: { title: "Penerimaan Lain (Other Deposit)", eximId: "11", info: "TRANSACTIONID, KeyID, GLACCOUNT, GLAMOUNT, DESCRIPTION, RATE, PRIMEAMOUNT, JVNUMBER, TRANSDATE, SOURCE, TRANSTYPE, TRANSDESCRIPTION, JVAMOUNT, HEADER_GLACCOUNT" },
+            OTHERPAYMENT: { title: "Pembayaran Lain (Other Payment)", eximId: "1", info: "TRANSACTIONID, KeyID, GLACCOUNT, GLAMOUNT, DEPTID, DESCRIPTION, RATE, PRIMEAMOUNT, JVNUMBER, TRANSDATE, SOURCE, TRANSTYPE, JVAMOUNT, HEADER_GLACCOUNT" },
+            JV: { title: "Jurnal Umum (Journal Voucher)", eximId: "7", info: "TRANSACTIONID, KeyID, GLACCOUNT, GLAMOUNT, LINE_DESCRIPTION, RATE, PRIMEAMOUNT, CURRENCYNAME, JVNUMBER, TRANSDATE, SOURCE, TRANSTYPE, TRANSDESCRIPTION, JVAMOUNT" },
+            ITEMTRANSFER: { title: "Pindah Barang (Item Transfer)", eximId: "139", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, UNITPRICE, TRANSFERNO, TRANSFERDATE, DESCRIPTION, FROMWHID, TOWHID, SERIALNUMBER, EXPIREDDATE" },
+            ITEMADJUSTMENT: { title: "Penyesuaian Persediaan (Item Adjustment)", eximId: "8", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, NEWQTY, UNITPRICE, ADJUSTMENTNO, ADJUSTMENTDATE, ADJUSTMENTACCOUNT, DESCRIPTION, WAREHOUSEID, SERIALNUMBER, EXPIREDDATE" },
+            ITEMGROUPING: { title: "Barang Grup (Item Grouping)", eximId: "6", info: "TRANSACTIONID, KeyID, ITEMNO (Kode Grup), ITEMNAME (Nama Grup), UNIT1, UNITPRICE, ITEMLINE_NO, ITEMLINE_QTY, ITEMLINE_UNIT, PRINTGROUP" },
+            JOBCOSTING: { title: "Pembiayaan Pesanan (Job Costing)", eximId: "10", info: "TRANSACTIONID, KeyID, TYPE (ITEM/ACCOUNT), ITEMNO, GLACCOUNT, QUANTITY, ITEMUNIT, ITEMOVDESC, GLAMOUNT, DESCRIPTION, BATCHNUMBER, TRANSDATE, TARGETACCOUNT, WAREHOUSEID" },
+            FINISHING: { title: "Penyelesaian Pesanan (Finishing)", eximId: "138", info: "TRANSACTIONID, KeyID, ITEMNO, QUANTITY, ITEMUNIT, UNITPRICE, PORTION, FINISHINGNO, FINISHINGDATE, BATCHNUMBER, JOBCSTID, WAREHOUSEID, DESCRIPTION" }
+        };
+
+        let activeTabs = [];
+        let loadedWorkbooks = {};
+
+        function openTab(modulKey, titleShort) {
+            if (!activeTabs.includes(modulKey)) {
+                activeTabs.push(modulKey);
+                createModuleCardDOM(modulKey);
+                renderTabs();
+            }
+            switchTab(modulKey);
+        }
+
+        function createModuleCardDOM(modulKey) {
+            const container = document.getElementById('tabContentContainer');
+            if (document.getElementById(`card-${modulKey}`)) return;
+
+            const mod = modulesData[modulKey];
+            const card = document.createElement('div');
+            card.id = `card-${modulKey}`;
+            card.className = 'module-card';
+            
+            card.innerHTML = `
+                <h3>${mod.title}</h3>
+                <p class="desc">Konversi berkas Excel ke format XML Accurate (NMEXML EximID ${mod.eximId}).</p>
+                
+                <div class="row">
+                    <div class="form-group">
+                        <label>EximID:</label>
+                        <input type="text" id="exim-${modulKey}" value="${mod.eximId}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Pilih File Excel (.xlsx / .xls):</label>
+                    <input type="file" id="file-${modulKey}" accept=".xlsx, .xls" onchange="handleFileSelect(event, '${modulKey}')">
+                </div>
+
+                <div class="info-box">
+                    <strong>Header Excel Minimal:</strong><br>
+                    ${mod.info}
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <button id="btn-convert-${modulKey}" onclick="processXML('${modulKey}')" disabled>Konversi ke NMEXML</button>
+                    <button class="btn-template" onclick="downloadTemplate('${modulKey}')">Unduh Template Excel Contoh</button>
+                </div>
+
+                <div class="actions">
+                    <label><strong>Hasil XML Output:</strong></label>
+                    <button id="btn-dl-${modulKey}" class="btn-download" onclick="downloadXML('${modulKey}')" style="display:none;">Unduh XML</button>
+                </div>
+                <textarea id="out-${modulKey}" readonly placeholder="Hasil konversi XML akan tampil di sini..."></textarea>
+            `;
+
+            container.appendChild(card);
+        }
+
+        function renderTabs() {
+            const tabBar = document.getElementById('tabBar');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (activeTabs.length > 0) {
+                emptyState.style.display = 'none';
+            } else {
+                emptyState.style.display = 'flex';
+            }
+
+            tabBar.innerHTML = '';
+
+            activeTabs.forEach(modulKey => {
+                const mod = modulesData[modulKey];
+                const tabItem = document.createElement('div');
+                tabItem.className = 'tab-item';
+                tabItem.id = `tab-${modulKey}`;
+                tabItem.onclick = () => switchTab(modulKey);
+
+                tabItem.innerHTML = `
+                    <span>${mod.title}</span>
+                    <span class="tab-close" onclick="closeTab(event, '${modulKey}')">&times;</span>
+                `;
+
+                tabBar.appendChild(tabItem);
+            });
+        }
+
+        function switchTab(modulKey) {
+            document.querySelectorAll('.module-card').forEach(card => card.classList.remove('active'));
+            document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.submenu-item').forEach(btn => btn.classList.remove('selected'));
+
+            const targetCard = document.getElementById(`card-${modulKey}`);
+            const targetTab = document.getElementById(`tab-${modulKey}`);
+            const targetBtn = document.getElementById(`btn-${modulKey}`);
+
+            if (targetCard) targetCard.classList.add('active');
+            if (targetTab) targetTab.classList.add('active');
+            if (targetBtn) targetBtn.classList.add('selected');
+        }
+
+        function closeTab(event, modulKey) {
+            event.stopPropagation();
+
+            activeTabs = activeTabs.filter(id => id !== modulKey);
+
+            const card = document.getElementById(`card-${modulKey}`);
+            if (card) card.remove();
+
+            const btnItem = document.getElementById(`btn-${modulKey}`);
+            if (btnItem) btnItem.classList.remove('selected');
+
+            delete loadedWorkbooks[modulKey];
+            renderTabs();
+
+            if (activeTabs.length > 0) {
+                switchTab(activeTabs[activeTabs.length - 1]);
+            }
+        }
+
+        function handleFileSelect(e, modulKey) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                loadedWorkbooks[modulKey] = XLSX.read(data, { type: 'array' });
+                document.getElementById(`btn-convert-${modulKey}`).disabled = false;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        /* Fungsi Unduh Template Excel Contoh */
+        function downloadTemplate(modulKey) {
+            const templateData = excelTemplates[modulKey];
+            if (!templateData) {
+                alert("Template belum tersedia.");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, modulKey);
+            XLSX.writeFile(workbook, `Template_Accurate_${modulKey}.xlsx`);
+        }
+
+        function processXML(modulKey) {
+            const wb = loadedWorkbooks[modulKey];
+            if (!wb) return;
+
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+            if (rows.length === 0) {
+                alert("Sheet Excel kosong!");
+                return;
+            }
+
+            const eximId = document.getElementById(`exim-${modulKey}`).value;
+            const branchCode = document.getElementById('globalBranchCode').value;
+
+            const txMap = new Map();
+            rows.forEach(row => {
+                const txId = String(row.TRANSACTIONID || row.ITEMNO).trim();
+                if (!txId) return;
+                if (!txMap.has(txId)) txMap.set(txId, { header: row, lines: [] });
+                txMap.get(txId).lines.push(row);
+            });
+
+            let xml = `<?xml version="1.0"?>\n`;
+            xml += `<NMEXML EximID="${escapeXml(eximId)}" BranchCode="${escapeXml(branchCode)}" ACCOUNTANTCOPYID="">\n`;
+            xml += `  <TRANSACTIONS OnError="CONTINUE">\n`;
+
+            let reqId = 1;
+            txMap.forEach((tx) => {
+                xml += buildModuleXML(modulKey, tx, reqId);
+                reqId++;
+            });
+
+            xml += `  </TRANSACTIONS>\n`;
+            xml += `</NMEXML>`;
+
+            document.getElementById(`out-${modulKey}`).value = xml;
+            document.getElementById(`btn-dl-${modulKey}`).style.display = 'inline-block';
+        }
+
+        function buildModuleXML(modulKey, tx, reqId) {
+            const h = tx.header;
+            let out = "";
+
+            if (modulKey === 'SALESORDER') {
+                out += `    <SALESORDER operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>${escapeXml(item.UNITRATIO || 1)}</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE>${escapeXml(item.UNITPRICE)}</UNITPRICE><DISCPC>${escapeXml(item.DISCPC)}</DISCPC><TAXCODES>${escapeXml(item.TAXCODES || 'T')}</TAXCODES><DEPTID>${escapeXml(item.DEPTID || '01')}</DEPTID><GROUPSEQ/><QTYSHIPPED>${escapeXml(item.QTYSHIPPED || item.QUANTITY)}</QTYSHIPPED>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <SONO>${escapeXml(h.SONO)}</SONO><SODATE>${escapeXml(h.SODATE)}</SODATE><TAX1ID>${escapeXml(h.TAX1ID || 'T')}</TAX1ID><TAX1CODE>${escapeXml(h.TAX1CODE || 'T')}</TAX1CODE><TAX2CODE/><TAX1RATE>${escapeXml(h.TAX1RATE || 11)}</TAX1RATE><TAX2RATE>0</TAX2RATE><TAX1AMOUNT>${escapeXml(h.TAX1AMOUNT || 0)}</TAX1AMOUNT><TAX2AMOUNT>0</TAX2AMOUNT><RATE>${escapeXml(h.RATE || 1)}</RATE><TAXINCLUSIVE>${escapeXml(h.TAXINCLUSIVE || 0)}</TAXINCLUSIVE><CUSTOMERISTAXABLE>${escapeXml(h.CUSTOMERISTAXABLE || 1)}</CUSTOMERISTAXABLE><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC/><FREIGHT>0</FREIGHT><TERMSID>${escapeXml(h.TERMSID)}</TERMSID><FOB/><ESTSHIPDATE>${escapeXml(h.ESTSHIPDATE || h.SODATE)}</ESTSHIPDATE><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION><SHIPTO1>${escapeXml(h.SHIPTO1 || 'CASH IDR')}</SHIPTO1><SHIPTO2>-</SHIPTO2><SHIPTO3>-</SHIPTO3><SHIPTO4>- - -</SHIPTO4><SHIPTO5>-</SHIPTO5><DP>0</DP><DPACCOUNTID>2102-001</DPACCOUNTID><DPUSED/><CUSTOMERID>${escapeXml(h.CUSTOMERID)}</CUSTOMERID><PONO/><CURRENCYNAME>${escapeXml(h.CURRENCYNAME || 'IDR')}</CURRENCYNAME>\n`;
+                out += `    </SALESORDER>\n`;
+            } 
+            else if (modulKey === 'DELIVERYORDER') {
+                out += `    <DELIVERYORDER operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</UNITPRICE><ITEMDISCPC/><TAXCODES>T</TAXCODES><DEPTID>01</DEPTID><GROUPSEQ/><SOSEQ>0</SOSEQ><BRUTOUNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</BRUTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><DOSEQ/><SOID>${escapeXml(item.SOID)}</SOID><DOID/>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><INVOICEAMOUNT>0</INVOICEAMOUNT><PURCHASEORDERNO/><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><DESCRIPTION/><SHIPDATE>${escapeXml(h.INVOICEDATE)}</SHIPDATE><DELIVERYORDER></DELIVERYORDER><CUSTOMERID>${escapeXml(h.CUSTOMERID)}</CUSTOMERID><SHIPTO1>CASH IDR</SHIPTO1><SHIPTO2>-</SHIPTO2><SHIPTO3>-</SHIPTO3><SHIPTO4>- - -</SHIPTO4><SHIPTO5>-</SHIPTO5><CURRENCYNAME>IDR</CURRENCYNAME><AUTOMATICINSERTGROUPING/>\n`;
+                out += `    </DELIVERYORDER>\n`;
+            }
+            else if (modulKey === 'SALESINVOICE') {
+                out += `    <SALESINVOICE operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</UNITPRICE><ITEMDISCPC/><TAXCODES>T</TAXCODES><DEPTID>01</DEPTID><GROUPSEQ/><SOSEQ>0</SOSEQ><BRUTOUNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</BRUTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><DOSEQ>1</DOSEQ><SOID/><DOID/>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><TAX1ID>T</TAX1ID><TAX1CODE>T</TAX1CODE><TAX2CODE/><TAX1RATE>11</TAX1RATE><TAX2RATE>0</TAX2RATE><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><CUSTOMERISTAXABLE>1</CUSTOMERISTAXABLE><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC/><INVOICEAMOUNT>${escapeXml(h.INVOICEAMOUNT)}</INVOICEAMOUNT><FREIGHT>0</FREIGHT><TERMSID>${escapeXml(h.TERMSID)}</TERMSID><FOB/><PURCHASEORDERNO/><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><DESCRIPTION/><SHIPDATE>${escapeXml(h.INVOICEDATE)}</SHIPDATE><DELIVERYORDER/><FISCALRATE>1</FISCALRATE><TAXDATE>${escapeXml(h.INVOICEDATE)}</TAXDATE><CUSTOMERID>${escapeXml(h.CUSTOMERID)}</CUSTOMERID><PRINTED>0</PRINTED><SHIPTO1>CASH IDR</SHIPTO1><SHIPTO2>-</SHIPTO2><SHIPTO3>-</SHIPTO3><SHIPTO4>- - -</SHIPTO4><SHIPTO5>-</SHIPTO5><ARACCOUNT>${escapeXml(h.ARACCOUNT)}</ARACCOUNT><TAXFORMNUMBER>${escapeXml(h.INVOICENO)}</TAXFORMNUMBER><TAXFORMCODE/><CURRENCYNAME>IDR</CURRENCYNAME><AUTOMATICINSERTGROUPING/>\n`;
+                out += `    </SALESINVOICE>\n`;
+            }
+            else if (modulKey === 'CUSTOMERRECEIPT') {
+                out += `    <CUSTOMERRECEIPT operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID><IMPORTEDTRANSACTIONID/>\n`;
+                tx.lines.forEach(line => {
+                    out += `      <InvoiceLine operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><PAYMENTAMOUNT>${escapeXml(line.PAYMENTAMOUNT)}</PAYMENTAMOUNT><PPH23AMOUNT>0</PPH23AMOUNT><PPH23RATE>0</PPH23RATE><PPH23FISCALRATE>1</PPH23FISCALRATE><PPH23NUMBER/><DISCTAKENAMOUNT>0</DISCTAKENAMOUNT><ARINVOICEID>${escapeXml(line.ARINVOICEID)}</ARINVOICEID>\n`;
+                    out += `      </InvoiceLine>\n`;
+                });
+                out += `      <SEQUENCENO>${escapeXml(h.SEQUENCENO)}</SEQUENCENO><PAYMENTDATE>${escapeXml(h.PAYMENTDATE)}</PAYMENTDATE><CHEQUENO/><BANKACCOUNT>${escapeXml(h.BANKACCOUNT)}</BANKACCOUNT><CHEQUEDATE>${escapeXml(h.PAYMENTDATE)}</CHEQUEDATE><CHEQUEAMOUNT>${escapeXml(h.CHEQUEAMOUNT)}</CHEQUEAMOUNT><RATE>1</RATE><DESCRIPTION/><FISCALPMT>0</FISCALPMT><VOID>0</VOID><BILLTOID>${escapeXml(h.BILLTOID)}</BILLTOID><OVERPAYUSED/><APPLYFROMCREDIT>0</APPLYFROMCREDIT><CURRENCYNAME>${escapeXml(h.CURRENCYNAME || 'IDR')}</CURRENCYNAME><RETURNCREDIT>0</RETURNCREDIT>\n`;
+                out += `    </CUSTOMERRECEIPT>\n`;
+            }
+            else if (modulKey === 'SALESRETURN') {
+                out += `    <SALESRETURN operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <ARREFUNDID/><TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE/><ITEMDISCPC/><TAXCODES>T</TAXCODES><GROUPSEQ/><SOSEQ/><BRUTTOUNITPRICE>${escapeXml(item.BRUTTOUNITPRICE)}</BRUTTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><INVDO/><INVID>${escapeXml(item.INVID || h.SALESINVOICEID)}</INVID><DOID/><INVOICESEQ>1</INVOICESEQ>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><GLYEAR>${escapeXml(h.GLYEAR)}</GLYEAR><GLPERIOD>${escapeXml(h.GLPERIOD)}</GLPERIOD><TAX1ID>T</TAX1ID><TAX2ID/><TAX1CODE>T</TAX1CODE><TAX2CODE/><TAX1RATE>11</TAX1RATE><TAX2RATE>0</TAX2RATE><TAX1AMOUNT>0</TAX1AMOUNT><TAX2AMOUNT>0</TAX2AMOUNT><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><CUSTOMERISTAXABLE/><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC/><INVOICEAMOUNT>${escapeXml(h.INVOICEAMOUNT)}</INVOICEAMOUNT><DESCRIPTION/><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><TAXNO>${escapeXml(h.INVOICENO)}</TAXNO><CUSTOMERID>${escapeXml(h.CUSTOMERID)}</CUSTOMERID><ARINVOICEID/><SALESINVOICEID>${escapeXml(h.SALESINVOICEID)}</SALESINVOICEID><DELIVERYORDERID/><CURRENCYNAME>IDR</CURRENCYNAME>\n`;
+                out += `    </SALESRETURN>\n`;
+            }
+            else if (modulKey === 'REQUISITION') {
+                out += `    <REQUISITION operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE/><ITEMDISCPC/><TAXCODES/><GROUPSEQ/><REQDATE>${escapeXml(h.REQDATE)}</REQDATE><NOTES/>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <REQNO>${escapeXml(h.REQNO)}</REQNO><REQDATE>${escapeXml(h.REQDATE)}</REQDATE><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION>\n`;
+                out += `    </REQUISITION>\n`;
+            }
+            else if (modulKey === 'PO') {
+                out += `    <PO operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <POID>${escapeXml(reqId)}</POID><TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE>${escapeXml(item.UNITPRICE)}</UNITPRICE><ITEMDISCPC/><TAXCODES>${escapeXml(item.TAX1CODE || 'T')}</TAXCODES><GROUPSEQ/><REQUISITION>${escapeXml(item.REQUISITION)}</REQUISITION><REQUISITIONSEQ>0</REQUISITIONSEQ>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <PONO>${escapeXml(h.PONO)}</PONO><PODATE>${escapeXml(h.PODATE)}</PODATE><GLYEAR/><GLPERIOD/><TAX1REF>T</TAX1REF><TAX1CODE>T</TAX1CODE><TAX2CODE/><TAX1RATE>11</TAX1RATE><TAX2RATE>0</TAX2RATE><TAX1AMOUNT>0</TAX1AMOUNT><TAX2AMOUNT>0</TAX2AMOUNT><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><VENDORISTAXABLE>1</VENDORISTAXABLE><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC>0</CASHDISCPC><POAMOUNT>${escapeXml(h.POAMOUNT)}</POAMOUNT><FREIGHT>0</FREIGHT><TERMREF>${escapeXml(h.TERMREF)}</TERMREF><FOB/><EXPECTED/><DESCRIPTION/><SHIPTO1>-</SHIPTO1><SHIPTO2>-</SHIPTO2><SHIPTO3>-</SHIPTO3><SHIPTO4/><SHIPTO5/><PROCEED/><CLOSED>0</CLOSED><DP/><DPACCOUNTREF>1104-001</DPACCOUNTREF><DPUSED/><VENDORREF>${escapeXml(h.VENDORREF)}</VENDORREF>\n`;
+                out += `    </PO>\n`;
+            }
+            else if (modulKey === 'RECIEVEITEM') {
+                out += `    <RECIEVEITEM operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE/><ITEMDISCPC/><TAXCODES>T</TAXCODES><GROUPSEQ/><POSEQ>0</POSEQ><BRUTOUNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</BRUTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><RISEQ/><POID>${escapeXml(item.POID || h.PURCHASEORDERNO)}</POID><RIID/>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><TAX1ID>T</TAX1ID><TAX1CODE>T</TAX1CODE><TAX2CODE/><TAX1RATE>11</TAX1RATE><TAX2RATE>0</TAX2RATE><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><INVOICEISTAXABLE>1</INVOICEISTAXABLE><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC/><INVOICEAMOUNT>0</INVOICEAMOUNT><TERMSID>C.O.D</TERMSID><FOB/><PURCHASEORDERNO>${escapeXml(h.PURCHASEORDERNO)}</PURCHASEORDERNO><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><DESCRIPTION/><SHIPDATE>${escapeXml(h.INVOICEDATE)}</SHIPDATE><POSTED>0</POSTED><FISCALRATE>1</FISCALRATE><INVFROMPR/><TAXDATE>${escapeXml(h.INVOICEDATE)}</TAXDATE><VENDORID>${escapeXml(h.VENDORID)}</VENDORID><SEQUENCENO>RI/09/00001</SEQUENCENO><APACCOUNT>2101-001</APACCOUNT><SHIPVENDID/><INVTAXNO2/><INVTAXNO1/><SSPDATE/><EXPENSESOFBILLID/><EXPENSESJOURNALDATETYPE/><LOCKED_BY/><LOCKED_TIME/>\n`;
+                out += `    </RECIEVEITEM>\n`;
+            }
+            else if (modulKey === 'PURCHASEINVOICE') {
+                out += `    <PURCHASEINVOICE operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC>${escapeXml(item.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE/><ITEMDISCPC/><TAXCODES>T</TAXCODES><GROUPSEQ/><POSEQ/><BRUTOUNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</BRUTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><RISEQ/><RIID/>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><TAX1ID>T</TAX1ID><TAX1CODE>T</TAX1CODE><TAX2CODE/><TAX1RATE>11</TAX1RATE><TAX2RATE>0</TAX2RATE><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><INVOICEISTAXABLE>1</INVOICEISTAXABLE><CASHDISCOUNT>0</CASHDISCOUNT><CASHDISCPC/><INVOICEAMOUNT>${escapeXml(h.INVOICEAMOUNT)}</INVOICEAMOUNT><TERMSID>${escapeXml(h.TERMSID)}</TERMSID><FOB/><PURCHASEORDERNO/><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><DESCRIPTION/><SHIPDATE>${escapeXml(h.INVOICEDATE)}</SHIPDATE><POSTED>1</POSTED><FISCALRATE>1</FISCALRATE><INVFROMPR/><TAXDATE>${escapeXml(h.INVOICEDATE)}</TAXDATE><VENDORID>${escapeXml(h.VENDORID)}</VENDORID><SEQUENCENO>PI/09/0001</SEQUENCENO><APACCOUNT>${escapeXml(h.APACCOUNT)}</APACCOUNT><SHIPVENDID/><INVTAXNO2>${escapeXml(h.INVOICENO)}</INVTAXNO2><INVTAXNO1/><SSPDATE>${escapeXml(h.INVOICEDATE)}</SSPDATE><EXPENSESOFBILLID/><EXPENSESJOURNALDATETYPE>0</EXPENSESJOURNALDATETYPE><LOCKED_BY/><LOCKED_TIME/>\n`;
+                out += `    </PURCHASEINVOICE>\n`;
+            }
+            else if (modulKey === 'VENDORPAYMENT') {
+                out += `    <VENDORPAYMENT operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID><IMPORTEDTRANSACTIONID/>\n`;
+                tx.lines.forEach(line => {
+                    out += `      <InvoiceLine operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><PAYMENTAMOUNT>${escapeXml(line.PAYMENTAMOUNT)}</PAYMENTAMOUNT><PPH23AMOUNT>0</PPH23AMOUNT><PPH23RATE>0</PPH23RATE><PPH23FISCALRATE>1</PPH23FISCALRATE><PPH23NUMBER/><DISCOUNT>0</DISCOUNT><APINVOICEID>${escapeXml(line.APINVOICEID)}</APINVOICEID><APINVOICESEQUENCE/>\n`;
+                    out += `      </InvoiceLine>\n`;
+                });
+                out += `      <SEQUENCENO>${escapeXml(h.SEQUENCENO)}</SEQUENCENO><PAYMENTDATE>${escapeXml(h.PAYMENTDATE)}</PAYMENTDATE><CHEQUENO/><BANKACCNT>${escapeXml(h.BANKACCNT)}</BANKACCNT><CHEQUEDATE>${escapeXml(h.PAYMENTDATE)}</CHEQUEDATE><RATE>1</RATE><DESCRIPTION/><FISCALPMT>0</FISCALPMT><VOID>0</VOID><VENDORID>${escapeXml(h.VENDORID)}</VENDORID><PAYEE>${escapeXml(h.PAYEE || '-')}</PAYEE>\n`;
+                out += `    </VENDORPAYMENT>\n`;
+            }
+            else if (modulKey === 'PURCHASERETURN') {
+                out += `    <PURCHASERETURN operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <APRETURNID/><TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>1</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <ITEMOVDESC/><UNITPRICE/><ITEMDISCPC/><TAXCODES>T</TAXCODES><GROUPSEQ/><POSEQ/><BRUTOUNITPRICE>${escapeXml(item.BRUTOUNITPRICE)}</BRUTOUNITPRICE><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.HEADER_WAREHOUSEID)}</WAREHOUSEID><QTYCONTROL>0</QTYCONTROL><INVRI/><INVID>${escapeXml(item.INVID || h.APINVOICEID)}</INVID><RIID/><INVOICESEQ>1</INVOICESEQ><ITEMDESCRIPTION>${escapeXml(item.ITEMNO)}</ITEMDESCRIPTION>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <INVOICENO>${escapeXml(h.INVOICENO)}</INVOICENO><INVOICEDATE>${escapeXml(h.INVOICEDATE)}</INVOICEDATE><GLYEAR>${escapeXml(h.GLYEAR)}</GLYEAR><GLPERIOD>${escapeXml(h.GLPERIOD)}</GLPERIOD><TAX1CODE/><TAX2CODE/><TAX1RATE/><TAX2RATE/><TAX1AMOUNT>0</TAX1AMOUNT><TAX2AMOUNT>0</TAX2AMOUNT><RATE>1</RATE><INCLUSIVETAX>0</INCLUSIVETAX><ISTAXABLE/><CASHDISCOUNT/><CASHDISCPC/><INVOICEAMOUNT>${escapeXml(h.INVOICEAMOUNT)}</INVOICEAMOUNT><DESCRIPTION/><WAREHOUSEID>${escapeXml(h.HEADER_WAREHOUSEID)}</WAREHOUSEID><TAXNO>${escapeXml(h.INVOICENO)}</TAXNO><TAXDATE>${escapeXml(h.INVOICEDATE)}</TAXDATE><VENDORID>${escapeXml(h.VENDORID)}</VENDORID><APINVOICEID>${escapeXml(h.APINVOICEID)}</APINVOICEID><RECEIVEITEMID/><SSPDATE>${escapeXml(h.INVOICEDATE)}</SSPDATE>\n`;
+                out += `    </PURCHASERETURN>\n`;
+            }
+            else if (modulKey === 'OTHERDEPOSIT') {
+                out += `    <OTHERDEPOSIT operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(line => {
+                    out += `      <ACCOUNTLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><GLACCOUNT>${escapeXml(line.GLACCOUNT)}</GLACCOUNT><GLAMOUNT>${escapeXml(line.GLAMOUNT)}</GLAMOUNT><DESCRIPTION>${escapeXml(line.DESCRIPTION)}</DESCRIPTION><RATE>${escapeXml(line.RATE || 1)}</RATE><PRIMEAMOUNT>${escapeXml(line.PRIMEAMOUNT)}</PRIMEAMOUNT><TXDATE/><POSTED/><CURRENCYNAME/>\n`;
+                    out += `      </ACCOUNTLINE>\n`;
+                });
+                out += `      <JVNUMBER>${escapeXml(h.JVNUMBER)}</JVNUMBER><TRANSDATE>${escapeXml(h.TRANSDATE)}</TRANSDATE><SOURCE>${escapeXml(h.SOURCE || 'GL')}</SOURCE><TRANSTYPE>other deposit</TRANSTYPE><TRANSDESCRIPTION>${escapeXml(h.TRANSDESCRIPTION)}</TRANSDESCRIPTION><JVAMOUNT>${escapeXml(h.JVAMOUNT)}</JVAMOUNT><GLACCOUNT>${escapeXml(h.HEADER_GLACCOUNT)}</GLACCOUNT><RATE>${escapeXml(h.HEADER_RATE || 1)}</RATE>\n`;
+                out += `    </OTHERDEPOSIT>\n`;
+            }
+            else if (modulKey === 'OTHERPAYMENT') {
+                out += `    <OTHERPAYMENT operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(line => {
+                    out += `      <ACCOUNTLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><GLACCOUNT>${escapeXml(line.GLACCOUNT)}</GLACCOUNT><GLAMOUNT>${escapeXml(line.GLAMOUNT)}</GLAMOUNT><DEPTID>${escapeXml(line.DEPTID || '01')}</DEPTID><DESCRIPTION>${escapeXml(line.DESCRIPTION)}</DESCRIPTION><RATE>${escapeXml(line.RATE || 1)}</RATE><PRIMEAMOUNT>${escapeXml(line.PRIMEAMOUNT)}</PRIMEAMOUNT><TXDATE/><POSTED/><CURRENCYNAME/>\n`;
+                    out += `      </ACCOUNTLINE>\n`;
+                });
+                out += `      <JVNUMBER>${escapeXml(h.JVNUMBER)}</JVNUMBER><TRANSDATE>${escapeXml(h.TRANSDATE)}</TRANSDATE><SOURCE>${escapeXml(h.SOURCE || 'GL')}</SOURCE><TRANSTYPE>other payment</TRANSTYPE><TRANSDESCRIPTION>${escapeXml(h.TRANSDESCRIPTION)}</TRANSDESCRIPTION><JVAMOUNT>${escapeXml(h.JVAMOUNT)}</JVAMOUNT><CHEQUENO/><PAYEE/><VOIDCHEQUE>0</VOIDCHEQUE><GLACCOUNT>${escapeXml(h.HEADER_GLACCOUNT)}</GLACCOUNT><RATE>${escapeXml(h.HEADER_RATE || 1)}</RATE>\n`;
+                out += `    </OTHERPAYMENT>\n`;
+            }
+            else if (modulKey === 'JV') {
+                out += `    <JV operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(line => {
+                    out += `      <ACCOUNTLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><GLACCOUNT>${escapeXml(line.GLACCOUNT)}</GLACCOUNT><GLAMOUNT>${escapeXml(line.GLAMOUNT)}</GLAMOUNT><DESCRIPTION>${escapeXml(line.LINE_DESCRIPTION)}</DESCRIPTION><RATE>${escapeXml(line.RATE || 1)}</RATE><PRIMEAMOUNT>${escapeXml(line.PRIMEAMOUNT)}</PRIMEAMOUNT><TXDATE/><POSTED/><CURRENCYNAME>${escapeXml(line.CURRENCYNAME)}</CURRENCYNAME>\n`;
+                    out += `      </ACCOUNTLINE>\n`;
+                });
+                out += `      <JVNUMBER>${escapeXml(h.JVNUMBER)}</JVNUMBER><TRANSDATE>${escapeXml(h.TRANSDATE)}</TRANSDATE><SOURCE>${escapeXml(h.SOURCE)}</SOURCE><TRANSTYPE>${escapeXml(h.TRANSTYPE)}</TRANSTYPE><TRANSDESCRIPTION>${escapeXml(h.TRANSDESCRIPTION)}</TRANSDESCRIPTION><JVAMOUNT>${escapeXml(h.JVAMOUNT)}</JVAMOUNT>\n`;
+                out += `    </JV>\n`;
+            }
+            else if (modulKey === 'ITEMTRANSFER') {
+                out += `    <WTRAN operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSFERID>${escapeXml(h.TRANSFERID || reqId)}</TRANSFERID><TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>${escapeXml(item.UNITRATIO || 1)}</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <UNITPRICE>${escapeXml(item.UNITPRICE || 0)}</UNITPRICE><QTYCONTROL>0</QTYCONTROL>\n`;
+                    
+                    if (item.SERIALNUMBER) {
+                        out += `        <SNHISTORY operation="Ret">\n`;
+                        out += `          <SERIALNUMBER>${escapeXml(item.SERIALNUMBER)}</SERIALNUMBER><EXPIREDDATE>${escapeXml(item.EXPIREDDATE)}</EXPIREDDATE><QUANTITY>${escapeXml(item.SNQUANTITY || 1)}</QUANTITY><SNSIGN>0</SNSIGN>\n`;
+                        out += `        </SNHISTORY>\n`;
+                    }
+                    
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <TRANSFERNO>${escapeXml(h.TRANSFERNO)}</TRANSFERNO><TRANSFERDATE>${escapeXml(h.TRANSFERDATE)}</TRANSFERDATE><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION><FROMWHID>${escapeXml(h.FROMWHID)}</FROMWHID><TOWHID>${escapeXml(h.TOWHID)}</TOWHID><FROMWHADDRESS>  </FROMWHADDRESS><TOWHADDRESS>  </TOWHADDRESS>\n`;
+                out += `    </WTRAN>\n`;
+            }
+            else if (modulKey === 'ITEMADJUSTMENT') {
+                out += `    <ITEMADJUSTMENT operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>${escapeXml(item.UNITRATIO || 1)}</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <NEWQTY>${escapeXml(item.NEWQTY)}</NEWQTY><UNITPRICE>${escapeXml(item.UNITPRICE || 0)}</UNITPRICE><QTYCONTROL>0</QTYCONTROL>\n`;
+                    
+                    if (item.SERIALNUMBER) {
+                        out += `        <SNHISTORY operation="Ret">\n`;
+                        out += `          <SERIALNUMBER>${escapeXml(item.SERIALNUMBER)}</SERIALNUMBER><EXPIREDDATE>${escapeXml(item.EXPIREDDATE)}</EXPIREDDATE><QUANTITY>${escapeXml(item.SNQUANTITY || 1)}</QUANTITY><SNSIGN>0</SNSIGN>\n`;
+                        out += `        </SNHISTORY>\n`;
+                    }
+                    
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <ADJUSTMENTNO>${escapeXml(h.ADJUSTMENTNO)}</ADJUSTMENTNO><ADJUSTMENTDATE>${escapeXml(h.ADJUSTMENTDATE)}</ADJUSTMENTDATE><ADJUSTMENTACCOUNT>${escapeXml(h.ADJUSTMENTACCOUNT)}</ADJUSTMENTACCOUNT><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION><WAREHOUSEID>${escapeXml(h.WAREHOUSEID)}</WAREHOUSEID>\n`;
+                out += `    </ITEMADJUSTMENT>\n`;
+            }
+            else if (modulKey === 'ITEMGROUPING') {
+                out += `    <GROUP operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <ITEMNO>${escapeXml(h.ITEMNO)}</ITEMNO><ITEMNAME>${escapeXml(h.ITEMNAME)}</ITEMNAME><UNIT1>${escapeXml(h.UNIT1 || 'Pcs')}</UNIT1><UNITPRICE>${escapeXml(h.UNITPRICE || 0)}</UNITPRICE><SUSPENDED>0</SUSPENDED><PRINTGROUP>${escapeXml(h.PRINTGROUP || 1)}</PRINTGROUP>\n`;
+                tx.lines.forEach(line => {
+                    if (line.ITEMLINE_NO) {
+                        out += `      <ITEMLINE operation="Add">\n`;
+                        out += `        <ITEMNO>${escapeXml(line.ITEMLINE_NO)}</ITEMNO><QUANTITY>${escapeXml(line.ITEMLINE_QTY || 1)}</QUANTITY><ITEMUNIT>${escapeXml(line.ITEMLINE_UNIT || 'Pcs')}</ITEMUNIT>\n`;
+                        out += `      </ITEMLINE>\n`;
+                    }
+                });
+                out += `    </GROUP>\n`;
+            }
+            else if (modulKey === 'JOBCOSTING') {
+                out += `    <JOBCST operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(line => {
+                    const type = String(line.TYPE || '').toUpperCase();
+                    if (type === 'ACCOUNT' || line.GLACCOUNT) {
+                        out += `      <ACCOUNTLINE operation="Add">\n`;
+                        out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><GLACCOUNT>${escapeXml(line.GLACCOUNT)}</GLACCOUNT><GLAMOUNT>${escapeXml(line.GLAMOUNT)}</GLAMOUNT><DESCRIPTION>${escapeXml(line.DESCRIPTION || line.ITEMOVDESC)}</DESCRIPTION><DEPTID>${escapeXml(line.DEPTID || '01')}</DEPTID>\n`;
+                        out += `      </ACCOUNTLINE>\n`;
+                    } else {
+                        out += `      <ITEMLINE operation="Add">\n`;
+                        out += `        <KeyID>${escapeXml(line.KeyID)}</KeyID><ITEMNO>${escapeXml(line.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(line.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(line.ITEMUNIT)}</ITEMUNIT><UNITRATIO>${escapeXml(line.UNITRATIO || 1)}</UNITRATIO>\n`;
+                        out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                        out += `        <ITEMOVDESC>${escapeXml(line.ITEMOVDESC)}</ITEMOVDESC><UNITPRICE>${escapeXml(line.UNITPRICE || 0)}</UNITPRICE><WAREHOUSEID>${escapeXml(line.LINE_WAREHOUSEID || h.WAREHOUSEID)}</WAREHOUSEID>\n`;
+                        out += `      </ITEMLINE>\n`;
+                    }
+                });
+                out += `      <BATCHNUMBER>${escapeXml(h.BATCHNUMBER)}</BATCHNUMBER><TRANSDATE>${escapeXml(h.TRANSDATE)}</TRANSDATE><TARGETACCOUNT>${escapeXml(h.TARGETACCOUNT)}</TARGETACCOUNT><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION><WAREHOUSEID>${escapeXml(h.WAREHOUSEID)}</WAREHOUSEID>\n`;
+                out += `    </JOBCST>\n`;
+            }
+            else if (modulKey === 'FINISHING') {
+                out += `    <FINISHING operation="Add" REQUESTID="${reqId}">\n`;
+                out += `      <TRANSACTIONID>${escapeXml(h.TRANSACTIONID)}</TRANSACTIONID>\n`;
+                tx.lines.forEach(item => {
+                    out += `      <ITEMLINE operation="Add">\n`;
+                    out += `        <KeyID>${escapeXml(item.KeyID)}</KeyID><ITEMNO>${escapeXml(item.ITEMNO)}</ITEMNO><QUANTITY>${escapeXml(item.QUANTITY)}</QUANTITY><ITEMUNIT>${escapeXml(item.ITEMUNIT)}</ITEMUNIT><UNITRATIO>${escapeXml(item.UNITRATIO || 1)}</UNITRATIO>\n`;
+                    out += `        <ITEMRESERVED1/><ITEMRESERVED2/><ITEMRESERVED3/><ITEMRESERVED4/><ITEMRESERVED5/><ITEMRESERVED6/><ITEMRESERVED7/><ITEMRESERVED8/><ITEMRESERVED9/><ITEMRESERVED10/>\n`;
+                    out += `        <UNITPRICE>${escapeXml(item.UNITPRICE || 0)}</UNITPRICE><PORTION>${escapeXml(item.PORTION || 100)}</PORTION><WAREHOUSEID>${escapeXml(item.LINE_WAREHOUSEID || h.WAREHOUSEID)}</WAREHOUSEID>\n`;
+                    out += `      </ITEMLINE>\n`;
+                });
+                out += `      <FINISHINGNO>${escapeXml(h.FINISHINGNO)}</FINISHINGNO><FINISHINGDATE>${escapeXml(h.FINISHINGDATE)}</FINISHINGDATE><BATCHNUMBER>${escapeXml(h.BATCHNUMBER)}</BATCHNUMBER><JOBCSTID>${escapeXml(h.JOBCSTID)}</JOBCSTID><WAREHOUSEID>${escapeXml(h.WAREHOUSEID)}</WAREHOUSEID><DESCRIPTION>${escapeXml(h.DESCRIPTION)}</DESCRIPTION>\n`;
+                out += `    </FINISHING>\n`;
+            }
+
+            return out;
+        }
+
+        function escapeXml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return String(unsafe).replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        function downloadXML(modulKey) {
+            const content = document.getElementById(`out-${modulKey}`).value;
+            if (!content) return;
+
+            const blob = new Blob([content], { type: 'text/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Accurate_${modulKey}_Export.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
